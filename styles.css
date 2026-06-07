@@ -922,3 +922,152 @@ input:checked + .slider:before {
     color: var(--text-secondary);
     font-size: 0.8rem;
 }
+
+/* ==========================================================================
+   TINY TASKBAR WIDGET MODE (MICRO-MODE)
+   ========================================================================== */
+
+/* Micro Toggle Button */
+.micro-toggle-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    z-index: 110;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    transition: var(--transition-bounce);
+}
+
+.micro-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    transform: scale(1.05);
+}
+
+.micro-mode {
+    max-width: 170px !important;
+    padding: 0.25rem !important;
+    gap: 0 !important;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden !important;
+}
+
+.micro-mode .app-header {
+    display: none !important;
+}
+
+.micro-mode .main-layout {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    margin: 0 !important;
+}
+
+.micro-mode .room-card {
+    min-height: 0 !important;
+    height: 100vh !important;
+    padding: 0.4rem !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    justify-content: flex-end !important;
+    overflow: hidden !important;
+}
+
+.micro-mode .cozy-rug {
+    bottom: 5px !important;
+    width: 90px !important;
+    height: 25px !important;
+    border: 1px dashed rgba(244, 162, 97, 0.15) !important;
+}
+
+.micro-mode .scene-container {
+    height: 95px !important;
+    margin-top: 0 !important;
+}
+
+.micro-mode .dog-wrapper {
+    width: 90px !important;
+    height: 90px !important;
+}
+
+.micro-mode .food-bowl-container, .micro-mode .water-bowl-container {
+    bottom: 5px !important;
+}
+
+.micro-mode .food-bowl-container { left: 5px !important; }
+.micro-mode .water-bowl-container { right: 5px !important; }
+
+.micro-mode .bowl-active {
+    transform: translateY(0) scale(0.65) !important;
+}
+
+/* Speech Bubble in Micro Mode */
+.micro-mode .speech-bubble {
+    position: absolute;
+    bottom: 95px;
+    width: 90%;
+    margin-bottom: 0 !important;
+    padding: 0.4rem 0.6rem !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    display: none; /* Hidden by default in micro mode */
+    z-index: 120;
+}
+
+/* Show the speech bubble ONLY when active with text */
+.micro-mode.show-bubble-active .speech-bubble {
+    display: block !important;
+    animation: float 4s ease-in-out infinite;
+}
+
+.micro-mode .speech-sender {
+    font-size: 0.65rem !important;
+    margin-bottom: 0.1rem !important;
+}
+
+.micro-mode .speech-text {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+}
+
+.micro-mode .status-panel {
+    display: none !important; /* Hide stats */
+}
+
+.micro-mode .care-actions {
+    display: none !important; /* Hide care buttons */
+}
+
+.micro-mode .dashboard-section {
+    display: none !important;
+}
+
+.micro-mode .app-footer {
+    display: none !important;
+}
+
+.micro-mode .micro-toggle-btn {
+    top: 5px !important;
+    right: 5px !important;
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.65rem !important;
+    opacity: 0.3;
+}
+
+.micro-mode .room-card:hover .micro-toggle-btn {
+    opacity: 1;
+}
+

@@ -384,6 +384,7 @@ function updateStatsUI() {
 function triggerAlert(alertType, customMessage) {
     if (state.isSleeping) return; // Silent if dog is sleeping
 
+    document.getElementById('appContainer').classList.add('show-bubble-active');
     setDogState('excited');
     playBarkSound();
 
@@ -408,6 +409,7 @@ function triggerAlert(alertType, customMessage) {
             setDogState('idle');
             document.getElementById('speech-text').textContent = "I'm resting on the rug now. Take care of yourself!";
         }
+        document.getElementById('appContainer').classList.remove('show-bubble-active');
     }, 15000);
 }
 
@@ -475,6 +477,7 @@ function feedDog() {
         wakeDogUp();
     }
 
+    document.getElementById('appContainer').classList.add('show-bubble-active');
     setDogState('eating');
     playChewSound();
 
@@ -499,6 +502,7 @@ function feedDog() {
     setTimeout(() => {
         bowl.classList.remove('bowl-active');
         setDogState('idle');
+        document.getElementById('appContainer').classList.remove('show-bubble-active');
         saveStateToStorage();
     }, 3000);
 }
@@ -508,6 +512,7 @@ function giveWaterDog() {
         wakeDogUp();
     }
 
+    document.getElementById('appContainer').classList.add('show-bubble-active');
     setDogState('eating'); // uses chewing motions
     playSlurpSound();
 
@@ -534,6 +539,7 @@ function giveWaterDog() {
     setTimeout(() => {
         bowl.classList.remove('bowl-active');
         setDogState('idle');
+        document.getElementById('appContainer').classList.remove('show-bubble-active');
         saveStateToStorage();
     }, 3000);
 }
@@ -543,6 +549,7 @@ function petDog() {
         wakeDogUp();
     }
 
+    document.getElementById('appContainer').classList.add('show-bubble-active');
     setDogState('excited');
     playChimeSound();
 
@@ -569,6 +576,7 @@ function petDog() {
 
     setTimeout(() => {
         setDogState('idle');
+        document.getElementById('appContainer').classList.remove('show-bubble-active');
         saveStateToStorage();
     }, 3000);
 }
@@ -749,6 +757,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-test-whisper').addEventListener('click', () => {
         petDog(); // triggers whisper + chime
     });
+
+    // Tiny Widget Mode Toggle (Micro Mode)
+    const microToggle = document.getElementById('btn-toggle-micro');
+    if (microToggle) {
+        microToggle.addEventListener('click', () => {
+            const isMicro = container.classList.toggle('micro-mode');
+            if (isMicro) {
+                microToggle.textContent = "🔍 Expand";
+                document.getElementById('speech-text').textContent = "Bucky is sitting on your taskbar! 🐾";
+                container.classList.add('show-bubble-active');
+                setTimeout(() => container.classList.remove('show-bubble-active'), 3000);
+            } else {
+                microToggle.textContent = "🔍 Tiny Mode";
+                document.getElementById('speech-text').textContent = "Bucky's room is expanded!";
+                container.classList.remove('show-bubble-active');
+            }
+        });
+    }
 
     // Register Service Worker for PWA capabilities
     if ('serviceWorker' in navigator) {

@@ -222,6 +222,11 @@ function loadData() {
     if (storedSettings) {
         try {
             settings = { ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) };
+            // Auto-migrate old default names to the new default
+            if (settings.dogName === "Milo" || settings.dogName === "Bucky") {
+                settings.dogName = DEFAULT_SETTINGS.dogName;
+                saveSettingsToStorage();
+            }
         } catch (e) {
             settings = { ...DEFAULT_SETTINGS };
         }

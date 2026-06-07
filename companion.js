@@ -634,7 +634,7 @@ function saveConfiguration() {
     const randomNotesText = document.getElementById('random-notes').value;
 
     // Validation
-    settings.dogName = dogNameInput || "Milo";
+    settings.dogName = dogNameInput || "Bucky";
     settings.partnerName = partnerNameInput || "Priya";
     settings.waterInterval = Number(waterSelect) || 60;
     settings.lunchTime = lunchTimeInput || "13:00";

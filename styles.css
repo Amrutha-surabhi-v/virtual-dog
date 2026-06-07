@@ -958,7 +958,7 @@ input:checked + .slider:before {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: center !important;
     overflow: hidden !important;
 }
 
@@ -982,12 +982,17 @@ input:checked + .slider:before {
     box-shadow: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    justify-content: flex-end !important;
+    justify-content: center !important;
+    align-items: center !important;
     overflow: hidden !important;
+    position: relative !important;
 }
 
 .micro-mode .cozy-rug {
-    bottom: 5px !important;
+    position: absolute !important;
+    bottom: 0px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     width: 90px !important;
     height: 25px !important;
     border: 1px dashed rgba(244, 162, 97, 0.15) !important;
@@ -995,7 +1000,12 @@ input:checked + .slider:before {
 
 .micro-mode .scene-container {
     height: 95px !important;
-    margin-top: 0 !important;
+    width: 100px !important;
+    margin: 0 auto !important;
+    position: relative !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
 }
 
 .micro-mode .dog-wrapper {
@@ -1016,9 +1026,11 @@ input:checked + .slider:before {
 
 /* Speech Bubble in Micro Mode */
 .micro-mode .speech-bubble {
-    position: absolute;
-    bottom: 95px;
-    width: 90%;
+    position: absolute !important;
+    top: 15px !important;
+    bottom: auto !important;
+    width: 90% !important;
+    left: 5% !important;
     margin-bottom: 0 !important;
     padding: 0.4rem 0.6rem !important;
     border-radius: 12px !important;

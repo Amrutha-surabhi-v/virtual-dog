@@ -3,7 +3,7 @@
 // ==========================================================================
 
 const DEFAULT_SETTINGS = {
-    dogName: "Bucky",
+    dogName: "Jayanti Lal",
     partnerName: "ogreess",
     waterInterval: 60, // minutes
     lunchTime: "13:00", // 24-hr format
@@ -634,7 +634,7 @@ function saveConfiguration() {
     const randomNotesText = document.getElementById('random-notes').value;
 
     // Validation
-    settings.dogName = dogNameInput || "Bucky";
+    settings.dogName = dogNameInput || "Jayanti Lal";
     settings.partnerName = partnerNameInput || "Priya";
     settings.waterInterval = Number(waterSelect) || 60;
     settings.lunchTime = lunchTimeInput || "13:00";
@@ -765,12 +765,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const isMicro = container.classList.toggle('micro-mode');
             if (isMicro) {
                 microToggle.textContent = "🔍 Expand";
-                document.getElementById('speech-text').textContent = "Bucky is sitting on your taskbar! 🐾";
+                document.getElementById('speech-text').textContent = "Jayanti Lal is sitting on your taskbar! 🐾";
                 container.classList.add('show-bubble-active');
                 setTimeout(() => container.classList.remove('show-bubble-active'), 3000);
             } else {
                 microToggle.textContent = "🔍 Tiny Mode";
-                document.getElementById('speech-text').textContent = "Bucky's room is expanded!";
+                document.getElementById('speech-text').textContent = "Jayanti Lal's room is expanded!";
                 container.classList.remove('show-bubble-active');
             }
         });

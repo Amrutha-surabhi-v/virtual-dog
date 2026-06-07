@@ -1083,3 +1083,99 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
+/* ==========================================================================
+   MOBILE FLOATING NAVIGATION BAR STYLING
+   ========================================================================== */
+.mobile-nav {
+    display: none; /* Hidden on desktop */
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 360px;
+    height: 64px;
+    background: rgba(30, 27, 36, 0.85);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    z-index: 999;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.04);
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 10px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: var(--transition-smooth);
+}
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    gap: 4px;
+    cursor: pointer;
+    width: 80px;
+    height: 48px;
+    border-radius: 12px;
+    transition: var(--transition-smooth);
+}
+
+.nav-btn:hover {
+    color: var(--text-primary);
+}
+
+.nav-btn.active {
+    color: var(--accent-amber);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+/* Responsive Overrides for Mobile Viewports */
+@media (max-width: 600px) {
+    .mobile-nav {
+        display: flex; /* Show bottom navigation on mobile */
+    }
+
+    .app-container {
+        padding-bottom: 90px !important; /* Ensure content doesn't get covered by mobile nav */
+    }
+
+    /* Adapt app container under mini-mode (which is the default without ?setup=true) */
+    .app-container.mini-mode {
+        max-width: 100% !important;
+        height: auto !important;
+        padding: 1rem 1rem 90px 1rem !important;
+        justify-content: flex-start !important;
+    }
+
+    /* Show/hide sections based on which mobile tab is selected */
+    .mobile-view-settings .room-section {
+        display: none !important;
+    }
+
+    .mobile-view-settings .dashboard-section {
+        display: flex !important;
+        width: 100% !important;
+    }
+
+    /* Mobile settings should be full screen instead of side-by-side or hidden */
+    .mini-mode .dashboard-section {
+        display: none; /* Hidden by default in mini-mode unless navigated */
+    }
+
+    .mini-mode.mobile-view-settings .dashboard-section {
+        display: flex !important;
+    }
+}
+

@@ -781,6 +781,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Mobile Navigation Tab Switcher
+    const navBtnCompanion = document.getElementById('nav-btn-companion');
+    const navBtnSettings = document.getElementById('nav-btn-settings');
+    if (navBtnCompanion && navBtnSettings) {
+        navBtnCompanion.addEventListener('click', () => {
+            navBtnCompanion.classList.add('active');
+            navBtnSettings.classList.remove('active');
+            container.classList.remove('mobile-view-settings');
+        });
+        navBtnSettings.addEventListener('click', () => {
+            navBtnSettings.classList.add('active');
+            navBtnCompanion.classList.remove('active');
+            container.classList.add('mobile-view-settings');
+        });
+    }
+
     // Register Service Worker for PWA capabilities
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

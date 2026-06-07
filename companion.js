@@ -686,6 +686,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dashboard) dashboard.style.display = 'none';
     }
 
+    // Check if we are in Partner Mode (url?partner=true)
+    const isPartnerMode = urlParams.has('partner');
+    if (isPartnerMode) {
+        const mobileNav = document.getElementById('mobile-nav');
+        if (mobileNav) {
+            mobileNav.style.setProperty('display', 'none', 'important');
+        }
+    }
+
     // 1. Initial Data Setup
     loadData();
     updateStatsUI();

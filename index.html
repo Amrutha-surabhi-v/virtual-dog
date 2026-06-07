@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Dog Companion 🐶</title>
+    <meta name="description" content="Your cute desktop dog companion for healthy work breaks and messages from your partner.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <!-- Animated background particles/grid -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-orange"></div>
+    <div class="bg-glow bg-glow-blue"></div>
+
+    <div class="app-container" id="appContainer">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">🐾</span>
+                <h1><span class="dog-name-display">Milo</span>'s Cozy Corner</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary btn-sm" id="btn-toggle-mode" title="Switch layout">
+                    <span class="mode-icon">📱</span> <span class="mode-text">Mini Mode</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT LAYOUT -->
+        <main class="main-layout">
+            <!-- COZY ROOM VIEW (LEFT) -->
+            <section class="room-section">
+                <div class="room-card glass">
+                    <!-- Particles Layer (hearts, water drops, bones, zzz) -->
+                    <div class="room-particles" id="particles-container"></div>
+                    
+                    <!-- Speech Bubble -->
+                    <div class="speech-bubble" id="speech-bubble">
+                        <div class="speech-sender" id="speech-sender">Milo</div>
+                        <div class="speech-text" id="speech-text">Woof! Hello! Let's work together today. Tap me to pet me! 👋</div>
+                    </div>
+
+                    <!-- Cozy Room Scene -->
+                    <div class="scene-container">
+                        <!-- Rug / Cushion -->
+                        <div class="cozy-rug"></div>
+                        
+                        <!-- Food & Water Bowls (hidden by default, animates in on feeding) -->
+                        <div class="food-bowl-container" id="food-bowl">
+                            <svg class="bowl-svg" viewBox="0 0 60 30" width="60" height="30">
+                                <ellipse cx="30" cy="20" rx="28" ry="10" fill="#e76f51" />
+                                <ellipse cx="30" cy="15" rx="24" ry="8" fill="#f4a261" />
+                                <ellipse cx="30" cy="15" rx="20" ry="6" fill="#a78b5c" class="bowl-content" id="bowl-food" />
+                            </svg>
+                        </div>
+                        <div class="water-bowl-container" id="water-bowl">
+                            <svg class="bowl-svg" viewBox="0 0 60 30" width="60" height="30">
+                                <ellipse cx="30" cy="20" rx="28" ry="10" fill="#2a9d8f" />
+                                <ellipse cx="30" cy="15" rx="24" ry="8" fill="#e76f51" />
+                                <ellipse cx="30" cy="15" rx="20" ry="6" fill="#a8dadc" class="bowl-content" id="bowl-water" />
+                            </svg>
+                        </div>
+
+                        <!-- Animated SVG Dog -->
+                        <div class="dog-wrapper" id="dog-interactive">
+                            <svg id="dog-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+                                <g id="whole-dog" class="dog-idle">
+                                    <!-- Tail -->
+                                    <path id="dog-tail" class="dog-tail" d="M 240,240 C 270,200 310,210 320,230 C 330,250 310,280 270,270" stroke="#f4a261" stroke-width="26" stroke-linecap="round" fill="none" />
+                                    
+                                    <!-- Feet / Paws (Back) -->
+                                    <ellipse id="paw-back-left" class="dog-paw" cx="130" cy="315" rx="22" ry="14" fill="#e76f51" />
+                                    <ellipse id="paw-back-right" class="dog-paw" cx="270" cy="315" rx="22" ry="14" fill="#e76f51" />
+
+                                    <!-- Body -->
+                                    <path id="dog-body" class="dog-body" d="M 140,220 C 130,290 150,320 200,320 C 250,320 270,290 260,220 C 250,180 150,180 140,220 Z" fill="#f4a261" />
+                                    <path d="M 170,200 C 170,240 180,310 200,310 C 220,310 230,240 230,200" fill="#ffffff" opacity="0.9" />
+
+                                    <!-- Feet / Paws (Front) -->
+                                    <ellipse id="paw-front-left" class="dog-paw" cx="170" cy="325" rx="16" ry="12" fill="#ffffff" />
+                                    <ellipse id="paw-front-right" class="dog-paw" cx="230" cy="325" rx="16" ry="12" fill="#ffffff" />
+
+                                    <!-- Collar -->
+                                    <path id="dog-collar" d="M 150,195 C 170,210 230,210 250,195 C 255,202 245,212 200,212 C 155,212 145,202 150,195 Z" fill="#e63946" />
+                                    <!-- Collar Tag (Bell) -->
+                                    <circle id="dog-bell" class="dog-bell" cx="200" cy="216" r="8" fill="#e9c46a" />
+
+                                    <!-- Head Group (can bob/tilt) -->
+                                    <g id="dog-head" class="dog-head">
+                                        <!-- Ear Left -->
+                                        <g id="ear-left" class="dog-ear-left">
+                                            <path d="M 125,120 L 165,165 L 115,185 Z" fill="#e76f51" />
+                                            <path d="M 130,135 L 158,165 L 122,178 Z" fill="#ffccd5" />
+                                        </g>
+
+                                        <!-- Ear Right -->
+                                        <g id="ear-right" class="dog-ear-right">
+                                            <path d="M 275,120 L 285,185 L 235,165 Z" fill="#e76f51" />
+                                            <path d="M 270,135 L 278,178 L 242,165 Z" fill="#ffccd5" />
+                                        </g>
+
+                                        <!-- Face Circle -->
+                                        <ellipse cx="200" cy="165" rx="65" ry="50" fill="#f4a261" />
+                                        <!-- White cheeks -->
+                                        <ellipse cx="160" cy="180" rx="30" ry="32" fill="#ffffff" />
+                                        <ellipse cx="240" cy="180" rx="30" ry="32" fill="#ffffff" />
+
+                                        <!-- Brow Spots -->
+                                        <ellipse cx="170" cy="138" rx="9" ry="6" fill="#ffffff" />
+                                        <ellipse cx="230" cy="138" rx="9" ry="6" fill="#ffffff" />
+
+                                        <!-- Eye Left -->
+                                        <g id="eye-left" class="dog-eye-left">
+                                            <!-- Awake Eye -->
+                                            <circle class="pupil" cx="165" cy="155" r="7" fill="#264653" />
+                                            <circle class="pupil-shine" cx="163" cy="153" r="2.5" fill="#ffffff" />
+                                            <!-- Sleeping closed eye (hidden by default) -->
+                                            <path class="sleeping-eye" d="M 157,155 Q 165,162 173,155" stroke="#264653" stroke-width="3.5" stroke-linecap="round" fill="none" style="display:none;" />
+                                        </g>
+
+                                        <!-- Eye Right -->
+                                        <g id="eye-right" class="dog-eye-right">
+                                            <!-- Awake Eye -->
+                                            <circle class="pupil" cx="235" cy="155" r="7" fill="#264653" />
+                                            <circle class="pupil-shine" cx="233" cy="153" r="2.5" fill="#ffffff" />
+                                            <!-- Sleeping closed eye (hidden by default) -->
+                                            <path class="sleeping-eye" d="M 227,155 Q 235,162 243,155" stroke="#264653" stroke-width="3.5" stroke-linecap="round" fill="none" style="display:none;" />
+                                        </g>
+
+                                        <!-- Snout Background (White) -->
+                                        <ellipse cx="200" cy="182" rx="26" ry="18" fill="#ffffff" />
+
+                                        <!-- Nose -->
+                                        <path d="M 190,175 C 190,175 190,183 200,183 C 210,183 210,175 210,175 C 210,170 190,170 190,175 Z" fill="#264653" />
+                                        
+                                        <!-- Mouth W shape -->
+                                        <path d="M 190,186 Q 196,192 200,186 Q 204,192 210,186" stroke="#264653" stroke-width="3" stroke-linecap="round" fill="none" />
+                                        
+                                        <!-- Tongue (panting, hidden when resting) -->
+                                        <path id="dog-tongue" class="dog-tongue" d="M 196,188 C 196,188 194,204 200,204 C 206,204 204,188 204,188 Z" fill="#e63946" />
+
+                                        <!-- Blush cheeks -->
+                                        <ellipse cx="145" cy="178" rx="8" ry="4" fill="#ffb5a7" opacity="0.6" />
+                                        <ellipse cx="255" cy="178" rx="8" ry="4" fill="#ffb5a7" opacity="0.6" />
+                                    </g>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Pet Status Indicators -->
+                    <div class="status-panel">
+                        <div class="status-item" title="Feed food to raise this!">
+                            <div class="status-header">
+                                <span>🍗 Hunger</span>
+                                <span id="val-hunger">100%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill fill-orange" id="bar-hunger" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="status-item" title="Feed water to raise this!">
+                            <div class="status-header">
+                                <span>💧 Hydration</span>
+                                <span id="val-hydration">100%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill fill-blue" id="bar-hydration" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="status-item" title="Reduces over time, sleeps to recover">
+                            <div class="status-header">
+                                <span>⚡ Energy</span>
+                                <span id="val-energy">100%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill fill-amber" id="bar-energy" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Dog Care Action Buttons -->
+                    <div class="care-actions">
+                        <button class="btn btn-primary" id="btn-feed">🍖 Feed</button>
+                        <button class="btn btn-primary" id="btn-water">💧 Give Water</button>
+                        <button class="btn btn-primary" id="btn-pet">👋 Pet</button>
+                        <button class="btn btn-secondary" id="btn-sleep">💤 Sleep</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONTROL DASHBOARD (RIGHT) -->
+            <section class="dashboard-section" id="dashboardSection">
+                <div class="dashboard-grid">
+                    <!-- CONFIG CARD -->
+                    <div class="card glass">
+                        <h2>⚙️ Setup Names</h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="input-dog-name">Dog's Name</label>
+                                <input type="text" id="input-dog-name" value="Milo" placeholder="e.g. Buster">
+                            </div>
+                            <div class="form-group">
+                                <label for="input-partner-name">Your Name (Sender)</label>
+                                <input type="text" id="input-partner-name" value="Priya" placeholder="e.g. Priya">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SCHEDULE CARD -->
+                    <div class="card glass">
+                        <h2>⏰ Break Schedule</h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="input-water-interval">Drink Water Reminder</label>
+                                <select id="input-water-interval">
+                                    <option value="60" selected>Every 1 hour (60 min)</option>
+                                    <option value="45">Every 45 minutes</option>
+                                    <option value="30">Every 30 minutes</option>
+                                    <option value="1">Every 1 minute (For testing)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="input-lunch-time">Lunch Break Time</label>
+                                <input type="time" id="input-lunch-time" value="13:00">
+                            </div>
+                            <div class="form-group">
+                                <label for="input-break-time">Evening Stretch Time</label>
+                                <input type="time" id="input-break-time" value="17:00">
+                            </div>
+                        </div>
+                        <div class="schedule-status-row">
+                            <span class="active-badge"><span class="badge-pulse"></span> Active Tracking</span>
+                            <span class="next-alert-text" id="next-alert-indicator">Calculating next alerts...</span>
+                        </div>
+                    </div>
+
+                    <!-- LOVE NOTES CARD -->
+                    <div class="card glass">
+                        <h2>❤️ Love Notes & Custom Messages</h2>
+                        <p class="section-hint">These custom messages will display in the dog's speech bubble and Windows notifications when reminders trigger.</p>
+                        
+                        <div class="form-group">
+                            <label for="msg-water">💧 Hourly Water Message</label>
+                            <textarea id="msg-water" rows="2" placeholder="Write something sweet about drinking water...">Please take a sip of water right now! I want you healthy. 💧</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="msg-lunch">ランチ 🍖 Afternoon Lunch Message (1:00 PM)</label>
+                            <textarea id="msg-lunch" rows="2" placeholder="Lunch time message...">Hey honey! It is 1:00 PM. Please leave your desk and go eat some warm lunch! 🍲</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="msg-break">🌇 Evening Break Message (5:00 PM)</label>
+                            <textarea id="msg-break" rows="2" placeholder="Break time message...">Work is almost done! Stand up, stretch, and let's wrap up our day nicely. ❤️</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="random-notes">📝 Extra Random Whispers (One per line)</label>
+                            <textarea id="random-notes" rows="3" placeholder="Enter other sweet messages...">I believe in you! Keep going!
+You are doing great, honey.
+Take a deep breath. Inhale... exhale.
+My heart is with you, even if we are far.
+Give yourself a 2-minute eye rest.</textarea>
+                        </div>
+
+                        <button class="btn btn-primary btn-full" id="btn-save-settings">💾 Save Configurations</button>
+                    </div>
+
+                    <!-- TEST TRIGGERS AND SYSTEM SETTINGS -->
+                    <div class="card glass">
+                        <h2>🛠️ Test & Windows Alerts</h2>
+                        <p class="section-hint">Enable sound and desktop alerts so the dog can grab attention even when minimized.</p>
+                        
+                        <div class="settings-toggle-row">
+                            <div class="toggle-control">
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-audio" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <span>🔊 Bark & Success Sounds</span>
+                            </div>
+                            <div class="toggle-control">
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-notifications">
+                                    <span class="slider"></span>
+                                </label>
+                                <span>🖥️ Windows Desktop Notifications</span>
+                            </div>
+                        </div>
+
+                        <div class="test-triggers-row">
+                            <button class="btn btn-secondary btn-sm" id="btn-test-water">Test Water 💧</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-test-lunch">Test Lunch 🍖</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-test-break">Test Break 🌇</button>
+                            <button class="btn btn-secondary btn-sm" id="btn-test-whisper">Test Whisper 💬</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <p>Made with ❤️ for a wonderful partner • Keep this tab open or install as desktop app</p>
+        </footer>
+    </div>
+
+    <!-- SCRIPT INCLUSIONS -->
+    <script src="companion.js"></script>
+</body>
+</html>

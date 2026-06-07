@@ -1,0 +1,16 @@
+{
+  "name": "Virtual Dog Companion",
+  "short_name": "Dog Companion",
+  "description": "A cute virtual dog that lives on your screen and reminds you to take breaks, drink water, and eat lunch, with messages from your partner.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1e1b24",
+  "theme_color": "#ffaa5e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

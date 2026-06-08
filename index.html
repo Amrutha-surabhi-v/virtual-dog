@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -25,8 +26,8 @@
                 <h1><span class="dog-name-display">Jayanti Lal</span>'s Cozy Corner</h1>
             </div>
             <div class="header-actions">
-                <button class="btn btn-secondary btn-sm" id="btn-toggle-mode" title="Switch layout">
-                    <span class="mode-icon">📱</span> <span class="mode-text">Mini Mode</span>
+                <button class="btn btn-secondary btn-sm" id="btn-connect-partner" title="Link companions">
+                    <span class="mode-icon">❤️</span> <span id="connect-btn-text">Connect Partner</span>
                 </button>
             </div>
         </header>
@@ -42,6 +43,16 @@
                     <!-- Particles Layer (hearts, water drops, bones, zzz) -->
                     <div class="room-particles" id="particles-container"></div>
                     
+                    <!-- Notification Banner (visible only to partner if not enabled) -->
+                    <div class="notification-banner" id="notification-banner" style="display: none;">
+                        <span class="banner-icon">🔔</span>
+                        <div class="banner-content">
+                            <h3>Enable Notifications</h3>
+                            <p>Tap to receive break alerts from your partner.</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" id="btn-enable-notifications">Enable</button>
+                    </div>
+
                     <!-- Speech Bubble -->
                     <div class="speech-bubble" id="speech-bubble">
                         <div class="speech-sender" id="speech-sender">Jayanti Lal</div>
@@ -196,116 +207,6 @@
                     </div>
                 </div>
             </section>
-
-            <!-- CONTROL DASHBOARD (RIGHT) -->
-            <section class="dashboard-section" id="dashboardSection">
-                <div class="dashboard-grid">
-                    <!-- CONFIG CARD -->
-                    <div class="card glass">
-                        <h2>⚙️ Setup Names</h2>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="input-dog-name">Dog's Name</label>
-                                <input type="text" id="input-dog-name" value="Jayanti Lal" placeholder="e.g. Buster">
-                            </div>
-                            <div class="form-group">
-                                <label for="input-partner-name">Your Name (Sender)</label>
-                                <input type="text" id="input-partner-name" value="Priya" placeholder="e.g. Priya">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SCHEDULE CARD -->
-                    <div class="card glass">
-                        <h2>⏰ Break Schedule</h2>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="input-water-interval">Drink Water Reminder</label>
-                                <select id="input-water-interval">
-                                    <option value="60" selected>Every 1 hour (60 min)</option>
-                                    <option value="45">Every 45 minutes</option>
-                                    <option value="30">Every 30 minutes</option>
-                                    <option value="1">Every 1 minute (For testing)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="input-lunch-time">Lunch Break Time</label>
-                                <input type="time" id="input-lunch-time" value="13:00">
-                            </div>
-                            <div class="form-group">
-                                <label for="input-break-time">Evening Stretch Time</label>
-                                <input type="time" id="input-break-time" value="17:00">
-                            </div>
-                        </div>
-                        <div class="schedule-status-row">
-                            <span class="active-badge"><span class="badge-pulse"></span> Active Tracking</span>
-                            <span class="next-alert-text" id="next-alert-indicator">Calculating next alerts...</span>
-                        </div>
-                    </div>
-
-                    <!-- LOVE NOTES CARD -->
-                    <div class="card glass">
-                        <h2>❤️ Love Notes & Custom Messages</h2>
-                        <p class="section-hint">These custom messages will display in the dog's speech bubble and Windows notifications when reminders trigger.</p>
-                        
-                        <div class="form-group">
-                            <label for="msg-water">💧 Hourly Water Message</label>
-                            <textarea id="msg-water" rows="2" placeholder="Write something sweet about drinking water...">Please take a sip of water right now! I want you healthy. 💧</textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="msg-lunch">ランチ 🍖 Afternoon Lunch Message (1:00 PM)</label>
-                            <textarea id="msg-lunch" rows="2" placeholder="Lunch time message...">Hey honey! It is 1:00 PM. Please leave your desk and go eat some warm lunch! 🍲</textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="msg-break">🌇 Evening Break Message (5:00 PM)</label>
-                            <textarea id="msg-break" rows="2" placeholder="Break time message...">Work is almost done! Stand up, stretch, and let's wrap up our day nicely. ❤️</textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="random-notes">📝 Extra Random Whispers (One per line)</label>
-                            <textarea id="random-notes" rows="3" placeholder="Enter other sweet messages...">I believe in you! Keep going!
-You are doing great, honey.
-Take a deep breath. Inhale... exhale.
-My heart is with you, even if we are far.
-Give yourself a 2-minute eye rest.</textarea>
-                        </div>
-
-                        <button class="btn btn-primary btn-full" id="btn-save-settings">💾 Save Configurations</button>
-                    </div>
-
-                    <!-- TEST TRIGGERS AND SYSTEM SETTINGS -->
-                    <div class="card glass">
-                        <h2>🛠️ Test & Windows Alerts</h2>
-                        <p class="section-hint">Enable sound and desktop alerts so the dog can grab attention even when minimized.</p>
-                        
-                        <div class="settings-toggle-row">
-                            <div class="toggle-control">
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-audio" checked>
-                                    <span class="slider"></span>
-                                </label>
-                                <span>🔊 Bark & Success Sounds</span>
-                            </div>
-                            <div class="toggle-control">
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-notifications">
-                                    <span class="slider"></span>
-                                </label>
-                                <span>🖥️ Windows Desktop Notifications</span>
-                            </div>
-                        </div>
-
-                        <div class="test-triggers-row">
-                            <button class="btn btn-secondary btn-sm" id="btn-test-water">Test Water 💧</button>
-                            <button class="btn btn-secondary btn-sm" id="btn-test-lunch">Test Lunch 🍖</button>
-                            <button class="btn btn-secondary btn-sm" id="btn-test-break">Test Break 🌇</button>
-                            <button class="btn btn-secondary btn-sm" id="btn-test-whisper">Test Whisper 💬</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </main>
 
         <!-- FOOTER -->
@@ -314,17 +215,21 @@ Give yourself a 2-minute eye rest.</textarea>
         </footer>
     </div>
 
-    <!-- Floating Mobile Bottom Navigation -->
-    <nav class="mobile-nav glass" id="mobile-nav">
-        <button class="nav-btn active" id="nav-btn-companion">
-            <span class="nav-icon">🐾</span>
-            <span class="nav-label">Companion</span>
-        </button>
-        <button class="nav-btn" id="nav-btn-settings">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-label">Settings</span>
-        </button>
-    </nav>
+    <!-- Connection Modal -->
+    <div class="modal-overlay" id="connection-modal" style="display: none;">
+        <div class="modal-card glass">
+            <h2>🔗 Connect Companions</h2>
+            <p class="modal-hint">Enter a secret shared code with your partner to link your companion dogs.</p>
+            <div class="form-group">
+                <label for="input-connection-key">Shared Connection Key</label>
+                <input type="text" id="input-connection-key" placeholder="e.g. ogress-love-bucky">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="btn-save-connection">Connect</button>
+                <button class="btn btn-secondary" id="btn-close-connection">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- SCRIPT INCLUSIONS -->
     <script src="companion.js"></script>

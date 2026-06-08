@@ -1,25 +1,12 @@
 // ==========================================================================
-// COMPANION STATE & DEFAULT SETTINGS
+// COMPANION STATE & SETTINGS
 // ==========================================================================
 
 const DEFAULT_SETTINGS = {
     dogName: "Jayanti Lal",
-    partnerName: "ogreess",
-    waterInterval: 60, // minutes
-    lunchTime: "13:00", // 24-hr format
-    breakTime: "17:00", // 24-hr format
-    msgWater: "drink water right now Mr. oger ! I want you healthy. 💧",
-    msgLunch: "Hey honey! It is 1:00 PM. Please leave your desk and go eat some warm lunch! 🍲",
-    msgBreak: "Work is almost done! Stand up, stretch, and go for tea and spill me all the tea ❤️",
-    randomNotes: [
-        "I believe in you! Keep going!",
-
-        "Take a deep breath. Inhale... exhale.",
-        "My heart is with you, even if we are far.",
-        "Give yourself a 2-minute eye rest."
-    ],
     audioEnabled: true,
-    notificationsEnabled: false
+    notificationsEnabled: false, // will request permission via banner
+    connectionKey: ""
 };
 
 const DEFAULT_STATE = {
@@ -28,39 +15,37 @@ const DEFAULT_STATE = {
     energy: 100,
     mood: 100,
     isSleeping: false,
-    lastWaterReset: Date.now(),
-    lastLunchDate: "", // String tracker: "Sun Jun 07 2026"
-    lastBreakDate: "", // String tracker
+    lastCareCheck: Date.now(),
     dogState: "idle" // "idle", "excited", "sleeping", "eating"
 };
 
 let settings = { ...DEFAULT_SETTINGS };
 let state = { ...DEFAULT_STATE };
 let statDecayInterval = null;
-let mainSchedulerInterval = null;
-let particleTimeout = null;
+let eventSource = null;
+
+// Track which warnings have been shown during this cycle
+const careAlertsTriggered = {
+    hydration70: false, hydration40: false,
+    hunger70: false, hunger40: false,
+    energy70: false, energy40: false
+};
 
 // ==========================================================================
 // AUDIO SYNTHESIZER (WEB AUDIO API)
 // ==========================================================================
 
-/**
- * Synthesizes a realistic double bark: "Woof woof!"
- */
 function playBarkSound() {
     if (!settings.audioEnabled || state.isSleeping) return;
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
         const singleBark = (time, pitch, duration) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             const filter = ctx.createBiquadFilter();
 
-            // Triangle wave gives a warm hollow tone like a bark
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(pitch, time);
-            // Quick frequency sweep downward
             osc.frequency.exponentialRampToValueAtTime(pitch * 0.4, time + duration);
 
             gain.gain.setValueAtTime(0.25, time);
@@ -85,15 +70,12 @@ function playBarkSound() {
     }
 }
 
-/**
- * Synthesizes a happy chime arpeggio: C5 -> E5 -> G5 -> C6
- */
 function playChimeSound() {
     if (!settings.audioEnabled) return;
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const now = ctx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50];
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 -> E5 -> G5 -> C6
 
         notes.forEach((freq, idx) => {
             const osc = ctx.createOscillator();
@@ -116,16 +98,12 @@ function playChimeSound() {
     }
 }
 
-/**
- * Synthesizes chewing crunch sounds
- */
 function playChewSound() {
     if (!settings.audioEnabled) return;
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const now = ctx.currentTime;
 
-        // Create 5 rapid crunch noises
         for (let i = 0; i < 5; i++) {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -149,16 +127,12 @@ function playChewSound() {
     }
 }
 
-/**
- * Synthesizes liquid slurping waves
- */
 function playSlurpSound() {
     if (!settings.audioEnabled) return;
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const now = ctx.currentTime;
 
-        // Create 6 overlapping liquid frequency sweeps
         for (let i = 0; i < 6; i++) {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -186,14 +160,28 @@ function playSlurpSound() {
 // SYSTEM NOTIFICATIONS
 // ==========================================================================
 
+function checkNotificationBanner() {
+    const banner = document.getElementById('notification-banner');
+    if (!banner) return;
+    
+    if (("Notification" in window) && (Notification.permission !== "granted" || !settings.notificationsEnabled)) {
+        banner.style.display = 'flex';
+    } else {
+        banner.style.display = 'none';
+    }
+}
+
 function requestNotificationPermission() {
     if ("Notification" in window) {
         Notification.requestPermission().then(permission => {
-            const checkbox = document.getElementById('toggle-notifications');
-            if (checkbox) {
-                checkbox.checked = (permission === "granted");
-                settings.notificationsEnabled = (permission === "granted");
-                saveSettingsToStorage();
+            const isGranted = (permission === "granted");
+            settings.notificationsEnabled = isGranted;
+            saveSettingsToStorage();
+            checkNotificationBanner();
+            
+            if (isGranted) {
+                playChimeSound();
+                sendSystemNotification(`${settings.dogName} says: Connected! 🎉`, "I will keep you healthy and connected to your partner.");
             }
         });
     }
@@ -202,10 +190,20 @@ function requestNotificationPermission() {
 function sendSystemNotification(title, message) {
     if (settings.notificationsEnabled && "Notification" in window && Notification.permission === "granted") {
         try {
-            new Notification(title, {
-                body: message,
-                icon: 'icon.svg'
-            });
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, {
+                        body: message,
+                        icon: 'icon.svg',
+                        badge: 'icon.svg',
+                        vibrate: [200, 100, 200]
+                    });
+                }).catch(err => {
+                    new Notification(title, { body: message, icon: 'icon.svg' });
+                });
+            } else {
+                new Notification(title, { body: message, icon: 'icon.svg' });
+            }
         } catch (e) {
             console.error("Notification trigger failed:", e);
         }
@@ -213,59 +211,147 @@ function sendSystemNotification(title, message) {
 }
 
 // ==========================================================================
+// PEER-TO-PEER INTERACTION SYNC (ntfy.sh)
+// ==========================================================================
+
+function initSyncConnection() {
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+
+    const key = settings.connectionKey ? settings.connectionKey.trim() : "";
+    const connectBtnText = document.getElementById('connect-btn-text');
+
+    if (!key) {
+        if (connectBtnText) connectBtnText.textContent = "Connect Partner";
+        return;
+    }
+
+    if (connectBtnText) connectBtnText.textContent = "Connected ❤️";
+
+    // Subscribe to shared connection topic using Server-Sent Events (SSE)
+    const topic = `virtual-dog-companion-${key}`;
+    eventSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
+
+    eventSource.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            // Ignore messages published by oneself
+            if (data.event === "message" && data.message) {
+                const payload = JSON.parse(data.message);
+                if (payload.senderId !== getClientId()) {
+                    handlePartnerInteraction(payload);
+                }
+            }
+        } catch (e) {
+            // Support raw text fallback if any
+        }
+    };
+
+    eventSource.onerror = (err) => {
+        console.error("Sync connection lost, reconnecting...", err);
+    };
+}
+
+function publishPartnerInteraction(actionType) {
+    if (!settings.connectionKey) return;
+    const topic = `virtual-dog-companion-${settings.connectionKey.trim()}`;
+    const payload = {
+        type: actionType,
+        senderId: getClientId(),
+        timestamp: Date.now()
+    };
+
+    fetch(`https://ntfy.sh/${topic}`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }).catch(err => {
+        console.error("Failed to sync interaction with partner:", err);
+    });
+}
+
+function handlePartnerInteraction(payload) {
+    if (state.isSleeping) return; // Silent if dog is sleeping
+
+    if (payload.type === 'pet') {
+        // Partner petted their dog!
+        setDogState('excited');
+        playChimeSound();
+        
+        // Spawn hearts floating above the dog
+        for (let i = 0; i < 4; i++) {
+            setTimeout(() => spawnParticle('❤️', 'heart-particle'), i * 200);
+        }
+
+        const messages = [
+            "Your partner just petted their companion. They are thinking of you! ❤️",
+            "A warm whisper from your partner: 'I'm thinking about you.' 💌",
+            "Jayanti Lal perked up! Someone special is sending you love right now. 🐾",
+            "Your partner petted their dog, sending you a gentle wave of warmth! ❤️"
+        ];
+        const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+        
+        document.getElementById('speech-sender').textContent = settings.dogName;
+        document.getElementById('speech-text').textContent = randomMsg;
+        document.getElementById('appContainer').classList.add('show-bubble-active');
+
+        sendSystemNotification(`${settings.dogName} perked up! 🐾`, randomMsg);
+
+        setTimeout(() => {
+            setDogState('idle');
+            document.getElementById('appContainer').classList.remove('show-bubble-active');
+        }, 8000);
+    }
+}
+
+// Generate unique identifier for this browser session to avoid handling own messages
+function getClientId() {
+    let id = sessionStorage.getItem('dog_client_id');
+    if (!id) {
+        id = 'client-' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('dog_client_id', id);
+    }
+    return id;
+}
+
+// ==========================================================================
 // STATE PERSISTENCE (LOCAL STORAGE)
 // ==========================================================================
 
 function loadData() {
-    // Load settings
     const storedSettings = localStorage.getItem('dog_companion_settings');
     if (storedSettings) {
         try {
             settings = { ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) };
-            // Auto-migrate old default names to the new default
-            if (settings.dogName === "Milo" || settings.dogName === "Bucky") {
-                settings.dogName = DEFAULT_SETTINGS.dogName;
-                saveSettingsToStorage();
-            }
         } catch (e) {
             settings = { ...DEFAULT_SETTINGS };
         }
     }
 
-    // Load state
+    // Load connection key from URL parameters if present (for easy setup sharing)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlKey = urlParams.get('key');
+    if (urlKey) {
+        settings.connectionKey = urlKey;
+        saveSettingsToStorage();
+    }
+
     const storedState = localStorage.getItem('dog_companion_state');
     if (storedState) {
         try {
             state = { ...DEFAULT_STATE, ...JSON.parse(storedState) };
-            // Ensure dates are parsed correctly
-            state.lastWaterReset = Number(state.lastWaterReset) || Date.now();
+            state.lastCareCheck = Number(state.lastCareCheck) || Date.now();
         } catch (e) {
             state = { ...DEFAULT_STATE };
         }
     }
 
-    // Populate form fields with saved settings
-    document.getElementById('input-dog-name').value = settings.dogName;
-    document.getElementById('input-partner-name').value = settings.partnerName;
-    document.getElementById('input-water-interval').value = settings.waterInterval;
-    document.getElementById('input-lunch-time').value = settings.lunchTime;
-    document.getElementById('input-break-time').value = settings.breakTime;
-
-    document.getElementById('msg-water').value = settings.msgWater;
-    document.getElementById('msg-lunch').value = settings.msgLunch;
-    document.getElementById('msg-break').value = settings.msgBreak;
-
-    document.getElementById('random-notes').value = settings.randomNotes.join('\n');
-    document.getElementById('toggle-audio').checked = settings.audioEnabled;
-
     // Verify notification permission in browser
     if ("Notification" in window) {
-        const checkbox = document.getElementById('toggle-notifications');
         if (Notification.permission === "granted") {
-            checkbox.checked = true;
             settings.notificationsEnabled = true;
         } else {
-            checkbox.checked = false;
             settings.notificationsEnabled = false;
         }
     }
@@ -296,10 +382,8 @@ function setDogState(newState) {
     const dogEl = document.getElementById('whole-dog');
     if (!dogEl) return;
 
-    // Remove all state classes
     dogEl.classList.remove('dog-idle', 'excited-alert', 'dog-sleeping', 'dog-eating');
 
-    // Toggle closed eyes display
     const pupils = dogEl.querySelectorAll('.pupil, .pupil-shine');
     const closedEyes = dogEl.querySelectorAll('.sleeping-eye');
 
@@ -322,9 +406,6 @@ function setDogState(newState) {
     saveStateToStorage();
 }
 
-/**
- * Spawns floating particles above the dog
- */
 function spawnParticle(typeChar, className) {
     const container = document.getElementById('particles-container');
     if (!container) return;
@@ -333,44 +414,41 @@ function spawnParticle(typeChar, className) {
     particle.className = `particle ${className}`;
     particle.textContent = typeChar;
 
-    // Random position around dog area
-    const randomX = 80 + Math.random() * 60; // relative px
+    const randomX = 80 + Math.random() * 60;
     particle.style.left = `${randomX}px`;
     particle.style.bottom = `120px`;
 
     container.appendChild(particle);
 
-    // Auto cleanup after anim ends
     setTimeout(() => {
         particle.remove();
     }, 2500);
 }
 
 // ==========================================================================
-// SCHEDULER & COMPANION RULES ENGINE
+// AUTONOMOUS CARING BEHAVIOR ENGINE
 // ==========================================================================
 
 function startMetricsDecay() {
     if (statDecayInterval) clearInterval(statDecayInterval);
 
-    // Update every 10 seconds for realistic feedback
+    // Decay checks run every 10 seconds
     statDecayInterval = setInterval(() => {
         if (state.isSleeping) {
-            // Regain energy when sleeping
-            state.energy = Math.min(100, state.energy + 1.5);
-            state.hunger = Math.max(0, state.hunger - 0.1);
-            state.hydration = Math.max(0, state.hydration - 0.2);
+            state.energy = Math.min(100, state.energy + 1.2);
+            state.hunger = Math.max(0, state.hunger - 0.08);
+            state.hydration = Math.max(0, state.hydration - 0.12);
             spawnParticle('Z', 'zzz-particle');
         } else {
-            // Normal decay
-            state.hunger = Math.max(0, state.hunger - 0.15);
-            state.hydration = Math.max(0, state.hydration - 0.25);
-            state.energy = Math.max(0, state.energy - 0.1);
+            state.hunger = Math.max(0, state.hunger - 0.35);
+            state.hydration = Math.max(0, state.hydration - 0.5);
+            state.energy = Math.max(0, state.energy - 0.25);
+            
+            // Check if we need to trigger an organic caring prompt
+            checkAutonomousCare();
         }
 
-        // Calculate mood based on other metrics
         state.mood = Math.round((state.hunger + state.hydration + state.energy) / 3);
-
         updateStatsUI();
         saveStateToStorage();
     }, 10000);
@@ -386,91 +464,93 @@ function updateStatsUI() {
     document.getElementById('bar-energy').style.width = `${state.energy}%`;
 }
 
-function triggerAlert(alertType, customMessage) {
-    if (state.isSleeping) return; // Silent if dog is sleeping
+function triggerCareCheckIn(title, message) {
+    if (state.isSleeping) return;
 
     document.getElementById('appContainer').classList.add('show-bubble-active');
     setDogState('excited');
     playBarkSound();
 
-    // Format full bubble message
-    const formattedMsg = `${settings.partnerName} says: "${customMessage}"`;
-
-    // Update Speech bubble
     document.getElementById('speech-sender').textContent = settings.dogName;
-    document.getElementById('speech-text').textContent = formattedMsg;
+    document.getElementById('speech-text').textContent = message;
 
-    // Send system alert
-    let title = `${settings.dogName} is jumping! 🐾`;
-    if (alertType === 'water') title = `💧 Time for water! (${settings.dogName})`;
-    if (alertType === 'lunch') title = `🍲 Lunch time! (${settings.dogName})`;
-    if (alertType === 'break') title = `🌇 Stretch break! (${settings.dogName})`;
+    sendSystemNotification(title, message);
 
-    sendSystemNotification(title, formattedMsg);
-
-    // Revert back to idle after 15 seconds if not interacted
+    // Revert back to idle after 12 seconds
     setTimeout(() => {
         if (state.dogState === 'excited') {
             setDogState('idle');
-            document.getElementById('speech-text').textContent = "I'm resting on the rug now. Take care of yourself!";
         }
         document.getElementById('appContainer').classList.remove('show-bubble-active');
-    }, 15000);
+    }, 12000);
 }
 
-function checkSchedules() {
-    const now = new Date();
-    const nowMs = Date.now();
-    const todayStr = now.toDateString();
-
-    // 1. Water Reminder Check (Interval based)
-    const waterTimeoutMs = settings.waterInterval * 60 * 1000;
-    if (nowMs - state.lastWaterReset >= waterTimeoutMs) {
-        state.lastWaterReset = nowMs;
-        triggerAlert('water', settings.msgWater);
-        saveStateToStorage();
+function checkAutonomousCare() {
+    // 1. Organic prompts triggered when stats drop below thresholds
+    if (state.hydration < 40 && !careAlertsTriggered.hydration40) {
+        careAlertsTriggered.hydration40 = true;
+        triggerCareCheckIn("Drink Water! 💧", "Hey there! I notice my water bowl is getting empty... and you might be running dry too. Let's both take a nice sip of water! 💧");
+        return;
+    }
+    if (state.hydration < 70 && !careAlertsTriggered.hydration70) {
+        careAlertsTriggered.hydration70 = true;
+        triggerCareCheckIn("Stay Hydrated 💧", "Just a gentle nudge! Keep a glass of water nearby and take a sip. You deserve to feel refreshed. 😊");
+        return;
     }
 
-    // 2. Lunch Check (Absolute time 1:00 PM)
-    const [lunchH, lunchM] = settings.lunchTime.split(':').map(Number);
-    if (now.getHours() === lunchH && now.getMinutes() === lunchM) {
-        if (state.lastLunchDate !== todayStr) {
-            state.lastLunchDate = todayStr;
-            triggerAlert('lunch', settings.msgLunch);
-            saveStateToStorage();
-        }
+    if (state.hunger < 40 && !careAlertsTriggered.hunger40) {
+        careAlertsTriggered.hunger40 = true;
+        triggerCareCheckIn("Meal Time 🍱", "My tummy is rumbling! Is yours too? Let's take a break to grab a nice snack or meal. Go eat something good! 🍛");
+        return;
+    }
+    if (state.hunger < 70 && !careAlertsTriggered.hunger70) {
+        careAlertsTriggered.hunger70 = true;
+        triggerCareCheckIn("Time for a Snack? 🍪", "Working hard can build up an appetite. Remember to eat healthy food to keep your mind sharp! 🍎");
+        return;
     }
 
-    // 3. Break Check (Absolute time 5:00 PM)
-    const [breakH, breakM] = settings.breakTime.split(':').map(Number);
-    if (now.getHours() === breakH && now.getMinutes() === breakM) {
-        if (state.lastBreakDate !== todayStr) {
-            state.lastBreakDate = todayStr;
-            triggerAlert('break', settings.msgBreak);
-            saveStateToStorage();
-        }
+    if (state.energy < 40 && !careAlertsTriggered.energy40) {
+        careAlertsTriggered.energy40 = true;
+        triggerCareCheckIn("Stretch Break! 🤸", "We've been sitting for a long time. Stand up, stretch your arms, and take a quick 1-minute walk around the room! 🐾");
+        return;
+    }
+    if (state.energy < 70 && !careAlertsTriggered.energy70) {
+        careAlertsTriggered.energy70 = true;
+        triggerCareCheckIn("Rest your eyes 👀", "Remember the 20-20-20 rule! Look away from the screen, focus on something 20 feet away for 20 seconds. Let's relax our eyes. 🌸");
+        return;
     }
 
-    updateNextAlertsIndicator();
+    // 2. Periodic support check-in every 30 minutes if stats are high
+    const now = Date.now();
+    const halfHour = 30 * 60 * 1000;
+    if (now - state.lastCareCheck >= halfHour) {
+        state.lastCareCheck = now;
+        
+        const randomSupportNotes = [
+            "Inhale... exhale. Take a deep breath with me. You are doing wonderful work! 🌸",
+            "Just wanted to sit near you and remind you that you are capable and doing great! Keep going. ❤️",
+            "Don't forget to relax your shoulders and unclench your jaw. You're working so hard. 🐾",
+            "I believe in you! Let's conquer the next hour together. 🐶"
+        ];
+        const note = randomSupportNotes[Math.floor(Math.random() * randomSupportNotes.length)];
+        triggerCareCheckIn("A gentle reminder 🌸", note);
+    }
 }
 
-function updateNextAlertsIndicator() {
-    const indicator = document.getElementById('next-alert-indicator');
-    if (!indicator) return;
-
-    const nowMs = Date.now();
-    const nextWaterTime = state.lastWaterReset + settings.waterInterval * 60 * 1000;
-    const waterMinLeft = Math.max(0, Math.ceil((nextWaterTime - nowMs) / 60000));
-
-    indicator.textContent = `Water: in ${waterMinLeft}m | Lunch: ${settings.lunchTime} | Break: ${settings.breakTime}`;
-}
-
-function startScheduler() {
-    if (mainSchedulerInterval) clearInterval(mainSchedulerInterval);
-
-    // Run checks every 10 seconds
-    checkSchedules();
-    mainSchedulerInterval = setInterval(checkSchedules, 10000);
+// Reset triggers when user takes active action (feeding/watering)
+function resetCareTriggersForMetric(metric) {
+    if (metric === 'hydration') {
+        careAlertsTriggered.hydration70 = false;
+        careAlertsTriggered.hydration40 = false;
+    }
+    if (metric === 'hunger') {
+        careAlertsTriggered.hunger70 = false;
+        careAlertsTriggered.hunger40 = false;
+    }
+    if (metric === 'energy') {
+        careAlertsTriggered.energy70 = false;
+        careAlertsTriggered.energy40 = false;
+    }
 }
 
 // ==========================================================================
@@ -478,19 +558,15 @@ function startScheduler() {
 // ==========================================================================
 
 function feedDog() {
-    if (state.isSleeping) {
-        wakeDogUp();
-    }
+    if (state.isSleeping) wakeDogUp();
 
     document.getElementById('appContainer').classList.add('show-bubble-active');
     setDogState('eating');
     playChewSound();
 
-    // Show food bowl
     const bowl = document.getElementById('food-bowl');
     bowl.classList.add('bowl-active');
 
-    // Spawn chewing particles
     let chewsCount = 0;
     const chewInterval = setInterval(() => {
         spawnParticle('🍖', 'heart-particle');
@@ -498,8 +574,8 @@ function feedDog() {
         if (chewsCount >= 4) clearInterval(chewInterval);
     }, 500);
 
-    // Update hunger stats
     state.hunger = Math.min(100, state.hunger + 30);
+    resetCareTriggersForMetric('hunger');
     updateStatsUI();
 
     document.getElementById('speech-text').textContent = `Munch munch... Thank you for the yummy food! 🍖`;
@@ -513,19 +589,15 @@ function feedDog() {
 }
 
 function giveWaterDog() {
-    if (state.isSleeping) {
-        wakeDogUp();
-    }
+    if (state.isSleeping) wakeDogUp();
 
     document.getElementById('appContainer').classList.add('show-bubble-active');
-    setDogState('eating'); // uses chewing motions
+    setDogState('eating');
     playSlurpSound();
 
-    // Show water bowl
     const bowl = document.getElementById('water-bowl');
     bowl.classList.add('bowl-active');
 
-    // Spawn droplets particles
     let gulps = 0;
     const slurpInterval = setInterval(() => {
         spawnParticle('💧', 'water-particle');
@@ -533,11 +605,9 @@ function giveWaterDog() {
         if (gulps >= 4) clearInterval(slurpInterval);
     }, 450);
 
-    // Hydration resets water timer!
     state.hydration = Math.min(100, state.hydration + 35);
-    state.lastWaterReset = Date.now();
+    resetCareTriggersForMetric('hydration');
     updateStatsUI();
-    updateNextAlertsIndicator();
 
     document.getElementById('speech-text').textContent = `Slurp slurp... So refreshing! Remember to drink your water too! 💧`;
 
@@ -549,35 +619,38 @@ function giveWaterDog() {
     }, 3000);
 }
 
-function petDog() {
-    if (state.isSleeping) {
-        wakeDogUp();
-    }
+function petDog(e) {
+    // Prevent double pet trigger when clicking wrapper
+    if (e) e.stopPropagation();
+    
+    if (state.isSleeping) wakeDogUp();
 
     document.getElementById('appContainer').classList.add('show-bubble-active');
     setDogState('excited');
     playChimeSound();
 
-    // Spawn hearts
     for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
-            spawnParticle('❤️', 'heart-particle');
-        }, i * 200);
+        setTimeout(() => spawnParticle('❤️', 'heart-particle'), i * 200);
     }
 
-    // Add extra stats
-    state.energy = Math.min(100, state.energy + 5);
+    state.energy = Math.min(100, state.energy + 8);
+    resetCareTriggersForMetric('energy');
     updateStatsUI();
 
-    // Pick a random love note whisper!
-    let note = "Pant pant! I love you! ❤️";
-    if (settings.randomNotes.length > 0) {
-        const randIdx = Math.floor(Math.random() * settings.randomNotes.length);
-        note = `${settings.partnerName} says: "${settings.randomNotes[randIdx]}" 💌`;
-    }
-
     document.getElementById('speech-sender').textContent = settings.dogName;
-    document.getElementById('speech-text').textContent = note;
+    
+    const petMessages = [
+        "Pant pant! I love you! ❤️ Sending warm hugs back!",
+        "Aww, that feels so good! You make me so happy! 🥰",
+        "Bark! Thank you for the sweet pets! I'm always here for you. 🐾",
+        "Tail wagging intensely! Let's do our best today! 🐶",
+        "Warm doggy hugs! You're doing wonderful, friend! ❤️"
+    ];
+    const randomPetMsg = petMessages[Math.floor(Math.random() * petMessages.length)];
+    document.getElementById('speech-text').textContent = randomPetMsg;
+
+    // Sync pet action to partner in real-time
+    publishPartnerInteraction('pet');
 
     setTimeout(() => {
         setDogState('idle');
@@ -598,7 +671,7 @@ function putDogToSleep() {
     state.isSleeping = true;
     setDogState('sleeping');
     document.getElementById('btn-sleep').textContent = "☀️ Wake Up";
-    document.getElementById('speech-text').textContent = `Zzz... ${settings.dogName} has curled up on the rug. The alarms are quieted.`;
+    document.getElementById('speech-text').textContent = `Zzz... ${settings.dogName} is curled up and sleeping soundly. 💤`;
     updateSleepingUIVisuals();
     saveStateToStorage();
 }
@@ -607,7 +680,7 @@ function wakeDogUp() {
     state.isSleeping = false;
     setDogState('idle');
     document.getElementById('btn-sleep').textContent = "💤 Sleep";
-    document.getElementById('speech-text').textContent = `Yawn... Good morning! I'm ready to keep you company. 🐾`;
+    document.getElementById('speech-text').textContent = `Yawn... Hello! I'm ready to keep you company. 🐾`;
     updateSleepingUIVisuals();
     saveStateToStorage();
 }
@@ -615,198 +688,86 @@ function wakeDogUp() {
 function updateSleepingUIVisuals() {
     const container = document.getElementById('dog-interactive');
     if (state.isSleeping) {
-        container.style.opacity = "0.8";
+        container.style.opacity = "0.75";
     } else {
         container.style.opacity = "1";
     }
 }
 
 // ==========================================================================
-// FORM INPUTS & SAVE OPERATIONS
-// ==========================================================================
-
-function saveConfiguration() {
-    const dogNameInput = document.getElementById('input-dog-name').value.trim();
-    const partnerNameInput = document.getElementById('input-partner-name').value.trim();
-    const waterSelect = document.getElementById('input-water-interval').value;
-    const lunchTimeInput = document.getElementById('input-lunch-time').value;
-    const breakTimeInput = document.getElementById('input-break-time').value;
-
-    const msgWaterText = document.getElementById('msg-water').value.trim();
-    const msgLunchText = document.getElementById('msg-lunch').value.trim();
-    const msgBreakText = document.getElementById('msg-break').value.trim();
-
-    const randomNotesText = document.getElementById('random-notes').value;
-
-    // Validation
-    settings.dogName = dogNameInput || "Jayanti Lal";
-    settings.partnerName = partnerNameInput || "Priya";
-    settings.waterInterval = Number(waterSelect) || 60;
-    settings.lunchTime = lunchTimeInput || "13:00";
-    settings.breakTime = breakTimeInput || "17:00";
-
-    settings.msgWater = msgWaterText || "Time to drink water! 💧";
-    settings.msgLunch = msgLunchText || "Go eat lunch! 🍲";
-    settings.msgBreak = msgBreakText || "Take a break! ❤️";
-
-    settings.randomNotes = randomNotesText
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-
-    saveSettingsToStorage();
-    updateDogNameDisplays();
-    updateNextAlertsIndicator();
-
-    // Visual indicator that configs were saved
-    playChimeSound();
-    for (let i = 0; i < 4; i++) {
-        setTimeout(() => spawnParticle('💾', 'heart-particle'), i * 150);
-    }
-
-    document.getElementById('speech-text').textContent = `Woof! I saved your configurations successfully! 💾`;
-}
-
-// ==========================================================================
-// INITIALIZATION & EVENT HANDLERS
+// MODAL & INITIALIZATION EVENT HANDLERS
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if we are in Setup Mode (url?setup=true)
-    const urlParams = new URLSearchParams(window.location.search);
-    const isSetupMode = urlParams.has('setup');
-
-    const container = document.getElementById('appContainer');
-    const toggleBtn = document.getElementById('btn-toggle-mode');
-    const dashboard = document.getElementById('dashboardSection');
-
-    if (!isSetupMode) {
-        container.classList.add('mini-mode');
-        if (toggleBtn) toggleBtn.style.display = 'none';
-        if (dashboard) dashboard.style.display = 'none';
-    }
-
-    // Check if we are in Partner Mode (url?partner=true)
-    const isPartnerMode = urlParams.has('partner');
-    if (isPartnerMode) {
-        const mobileNav = document.getElementById('mobile-nav');
-        if (mobileNav) {
-            mobileNav.style.setProperty('display', 'none', 'important');
-        }
-    }
-
     // 1. Initial Data Setup
     loadData();
     updateStatsUI();
+    checkNotificationBanner();
+    
+    // 2. Start real-time sync with partner if key exists
+    initSyncConnection();
 
-    // 2. Start Engines
+    // 3. Start stats decay and autonomous care schedule
     startMetricsDecay();
-    startScheduler();
 
-    // Set initial dog visual class
     if (state.isSleeping) {
         putDogToSleep();
     } else {
         setDogState('idle');
     }
 
-    // 3. Register Event Listeners
-
-    // Care Actions
+    // 4. Care Actions Listeners
     document.getElementById('btn-feed').addEventListener('click', feedDog);
     document.getElementById('btn-water').addEventListener('click', giveWaterDog);
     document.getElementById('btn-pet').addEventListener('click', petDog);
     document.getElementById('btn-sleep').addEventListener('click', toggleSleepState);
     document.getElementById('dog-interactive').addEventListener('click', petDog);
 
-    // Forms & Settings
-    document.getElementById('btn-save-settings').addEventListener('click', saveConfiguration);
+    // 5. Notification Banner
+    const enableNotifBtn = document.getElementById('btn-enable-notifications');
+    if (enableNotifBtn) {
+        enableNotifBtn.addEventListener('click', requestNotificationPermission);
+    }
 
-    document.getElementById('toggle-audio').addEventListener('change', (e) => {
-        settings.audioEnabled = e.target.checked;
-        saveSettingsToStorage();
-    });
+    // 6. Connection Modal Controls
+    const connectPartnerBtn = document.getElementById('btn-connect-partner');
+    const connectionModal = document.getElementById('connection-modal');
+    const closeConnectionBtn = document.getElementById('btn-close-connection');
+    const saveConnectionBtn = document.getElementById('btn-save-connection');
+    const inputConnectionKey = document.getElementById('input-connection-key');
 
-    document.getElementById('toggle-notifications').addEventListener('change', (e) => {
-        if (e.target.checked) {
-            requestNotificationPermission();
-        } else {
-            settings.notificationsEnabled = false;
+    if (connectPartnerBtn && connectionModal) {
+        connectPartnerBtn.addEventListener('click', () => {
+            if (inputConnectionKey) {
+                inputConnectionKey.value = settings.connectionKey || "";
+            }
+            connectionModal.style.display = 'flex';
+        });
+    }
+
+    if (closeConnectionBtn && connectionModal) {
+        closeConnectionBtn.addEventListener('click', () => {
+            connectionModal.style.display = 'none';
+        });
+    }
+
+    if (saveConnectionBtn && connectionModal && inputConnectionKey) {
+        saveConnectionBtn.addEventListener('click', () => {
+            const keyVal = inputConnectionKey.value.trim();
+            settings.connectionKey = keyVal;
             saveSettingsToStorage();
-        }
-    });
+            initSyncConnection();
+            connectionModal.style.display = 'none';
 
-    // Mode Switcher (Full Screen <-> Mini Companion Widget)
-    document.getElementById('btn-toggle-mode').addEventListener('click', () => {
-        const container = document.getElementById('appContainer');
-        const isMini = container.classList.toggle('mini-mode');
-
-        const modeIcon = document.querySelector('.mode-icon');
-        const modeText = document.querySelector('.mode-text');
-
-        if (isMini) {
-            modeIcon.textContent = "💻";
-            modeText.textContent = "Full Dashboard";
-            document.getElementById('speech-text').textContent = "Mini Mode active! Pin me to your screen.";
-        } else {
-            modeIcon.textContent = "📱";
-            modeText.textContent = "Mini Mode";
-            document.getElementById('speech-text').textContent = "Full dashboard is back! Configure my stats here.";
-        }
-    });
-
-    // Test simulator buttons
-    document.getElementById('btn-test-water').addEventListener('click', () => {
-        triggerAlert('water', settings.msgWater);
-    });
-
-    document.getElementById('btn-test-lunch').addEventListener('click', () => {
-        triggerAlert('lunch', settings.msgLunch);
-    });
-
-    document.getElementById('btn-test-break').addEventListener('click', () => {
-        triggerAlert('break', settings.msgBreak);
-    });
-
-    document.getElementById('btn-test-whisper').addEventListener('click', () => {
-        petDog(); // triggers whisper + chime
-    });
-
-    // Tiny Widget Mode Toggle (Micro Mode)
-    const microToggle = document.getElementById('btn-toggle-micro');
-    if (microToggle) {
-        microToggle.addEventListener('click', () => {
-            const isMicro = container.classList.toggle('micro-mode');
-            if (isMicro) {
-                microToggle.textContent = "🔍 Expand";
-                document.getElementById('speech-text').textContent = "Jayanti Lal is sitting on your taskbar! 🐾";
-                container.classList.add('show-bubble-active');
-                setTimeout(() => container.classList.remove('show-bubble-active'), 3000);
-            } else {
-                microToggle.textContent = "🔍 Tiny Mode";
-                document.getElementById('speech-text').textContent = "Jayanti Lal's room is expanded!";
-                container.classList.remove('show-bubble-active');
+            // Generate particles
+            playChimeSound();
+            for (let i = 0; i < 4; i++) {
+                setTimeout(() => spawnParticle('❤️', 'heart-particle'), i * 150);
             }
         });
     }
 
-    // Mobile Navigation Tab Switcher
-    const navBtnCompanion = document.getElementById('nav-btn-companion');
-    const navBtnSettings = document.getElementById('nav-btn-settings');
-    if (navBtnCompanion && navBtnSettings) {
-        navBtnCompanion.addEventListener('click', () => {
-            navBtnCompanion.classList.add('active');
-            navBtnSettings.classList.remove('active');
-            container.classList.remove('mobile-view-settings');
-        });
-        navBtnSettings.addEventListener('click', () => {
-            navBtnSettings.classList.add('active');
-            navBtnCompanion.classList.remove('active');
-            container.classList.add('mobile-view-settings');
-        });
-    }
-
-    // Register Service Worker for PWA capabilities
+    // Service Worker for PWA
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
@@ -815,4 +776,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
